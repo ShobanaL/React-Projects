@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Chatbot</title>
+    <style>
+      body {
+        font-family: Arial;
+      }
+
+      .app-container{
+        margin-left: auto;
+        margin-right: auto;
+        max-width: 600px;
+        height: calc(100vh - 18px);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .chatinput-container {
+        display: flex;
+        margin-bottom: 20px;
+
+        .send-button {
+          background-color: rgb(25, 135, 84);
+          color: white;
+          border: none;
+          padding: 12px 20px;
+          border-radius: 10px;
+          margin-left: 10px;
+          font-size: 15px;
+          cursor: pointer;
+        }
+
+        input {
+          font-size: 15px;
+          padding: 12px 15px;
+          border: 1px solid grey;
+          border-radius: 10px;
+          margin-right: 10px;
+          flex-grow: 1;
+        }
+      }
+
+      .chat-messages-container {
+        flex-grow: 1;
+        margin-top: 20px;
+        overflow: scroll;
+        scrollbar-width: none;
+
+        .chat-message-user {
+          display: flex;
+          align-items: center;
+          justify-content: end;
+          gap: 10px;
+          margin-bottom: 20px;
+        }
+
+        .chat-message-bot {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 20px;
+        }
+
+        .chat-message-text {
+          background-color: rgb(238, 238, 238);
+          padding: 12px 16px;
+          border-radius: 10px;
+          max-width: 300px;
+        }
+
+        .chat-message-profile {
+          width: 45px;
+          height: 45px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chatbot-container"></div>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+    <script src="https://unpkg.com/supersimpledev/chatbot.js"></script>
+
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+      // React component for the chat input
+      function ChatInput({ chatMessages, setChatMessages }) {
+        // inputValue --> Current data
+        // setInputValue --> updater function
+        const [inputValue, setInputValue] = React.useState('');
+        function handleInputChange(event) {
+          setInputValue(event.target.value);
+        }
+
+        function handleSendMessage() {
+          const botResponse = Chatbot.getResponse(inputValue);
+
+          setChatMessages([
+            ...chatMessages,
+            {
+              id: chatMessages.length + 1,
+              message: inputValue,
+              sender: "user"
+            },
+            {
+              id: chatMessages.length + 2,
+              message: botResponse,
+              sender: "bot"
+            }
+          ]);
+
+          setInputValue('');
+        }
+
+        return (
+          // Fragment is used here to avoid adding an extra div to the DOM
+          <div className="chatinput-container">
+            <input
+              value={inputValue}
+              placeholder="Type a message..."
+              size="30"
+              onChange={handleInputChange}
+            />
+            <button
+              className="send-button"
+              onClick={handleSendMessage}
+            >
+              Send
+            </button>
+          </div>
+        );
+      }
+
+      // React component for displaying chat messages
+      function ChatMessage(props) {
+        // Destructuring props to extract message and sender
+        const { message, sender } = props;
+
+        return (
+          <div className={sender === "bot" ? "chat-message-bot" : "chat-message-user"}>
+            {/* Guard operators are used to conditionally render the bot and user images based on the sender */}
+
+            {sender === "bot" && (
+              <img src="assets/images/bot.png" className="chat-message-profile"/>
+            )}
+
+            <div className="chat-message-text">{message}</div>
+
+            {sender === "user" && (
+              <img src="assets/images/user.png" className="chat-message-profile"/>
+            )}
+          </div>
+        );
+      }
+
+      // React component for displaying a list of chat messages
+      function ChatMessages({chatMessages}) {
+        // useRef - Automatically save an html element reference from the component.
+        // Used to create a reference to the chat messages container for scrolling purposes
+        const chatMessagesRef = React.useRef(null);
+
+        // useEffect - Runs code component is added or updated.
+        // Used to scroll to the bottom of the chat messages container whenever a new message is added
+        React.useEffect(() => {
+          const containerElem = chatMessagesRef.current;
+          if (containerElem) {
+            containerElem.scrollTop = containerElem.scrollHeight;
+          }
+        }, [chatMessages]);
+
+        const chatMessageComponents = chatMessages.map(message => {
+          return (
+            <ChatMessage
+              message={message.message}
+              sender={message.sender}
+              key={message.id}
+            />
+          );
+        });
+
+        return (
+          <div
+            className="chat-messages-container"
+            ref={chatMessagesRef}
+          >
+            {chatMessageComponents}
+          </div>
+        );
+      }
+
+      // Main app component that combines the chat input and messages
+      function App() {
+        const [chatMessages, setChatMessages] = React.useState([]);
+
+        return (
+          <div className="app-container">
+            <ChatMessages chatMessages={chatMessages} />
+            <ChatInput
+              chatMessages={chatMessages}
+              setChatMessages={setChatMessages}
+            />
+          </div>
+        );
+      }
+
+      const container = document.querySelector('.chatbot-container');
+      ReactDOM.createRoot(container).render(<App />);
+    </script>
+  </body>
+</html>
